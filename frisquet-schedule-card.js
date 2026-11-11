@@ -5,6 +5,12 @@
  * à partir de l'attribut `programmation` de l'entité climate :
  *   [{ "jour": 0..6, "plages": [0/1, ...] }]
  *
+ * Installation :
+ *   1. Copier ce fichier dans config/www/frisquet-schedule-card.js
+ *   2. Paramètres -> Tableaux de bord -> Ressources -> ajouter :
+ *      /local/frisquet-schedule-card.js (type JavaScript)
+ *   3. Vider le cache du navigateur.
+ *
  * Utilisation :
  *   type: custom:frisquet-schedule-card
  *   entity: climate.mazone
@@ -36,6 +42,16 @@ class FrisquetScheduleCard extends HTMLElement {
   }
 
   _render() {
+    try {
+      this._renderInner();
+    } catch (e) {
+      this.renderRoot.innerHTML =
+        `<ha-card><div class="warn">Erreur carte : ${e.message}</div></ha-card>`;
+      console.error("frisquet-schedule-card :", e);
+    }
+  }
+
+  _renderInner() {
     if (!this.config || !this._hass) return;
     const stateObj = this._hass.states[this.config.entity];
     if (!stateObj) {
@@ -52,7 +68,10 @@ class FrisquetScheduleCard extends HTMLElement {
 
     const confortColor = this.config.confort_color || "#ff5252";
     const reduitColor = this.config.reduit_color || "#42a5f5";
-    const jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+    // Numérotation Frisquet : 0 = dimanche, 1..6 = lundi..samedi
+    const joursFrisquet = { 0: "Dimanche", 1: "Lundi", 2: "Mardi", 3: "Mercredi", 4: "Jeudi", 5: "Vendredi", 6: "Samedi" };
+    // Ordre d'affichage : lundi -> dimanche
+    const ordreAffichage = [1, 2, 3, 4, 5, 6, 0];
 
     const byDay = {};
     let total = 0;
@@ -64,13 +83,15 @@ class FrisquetScheduleCard extends HTMLElement {
     if (!total) total = 288;
     const stepMin = total >= 288 ? 5 : 30;
 
-    const nowDay = (now.getDay() + 6) % 7;
+    // Date.getDay() : 0 = dimanche, comme la numérotation Frisquet
+    const nowDay = new Date().getDay();
 
     const fmtTime = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
     let rows = "";
-    for (let d = 0; d < 7; d++) {
+    for (const d of ordreAffichage) {
       const plages = byDay[d] && byDay[d].length ? byDay[d] : new Array(total).fill(0);
+      const jourNom = joursFrisquet[d];
       let blocks = "";
       let chg = "";
       let lastPct = -100;
@@ -85,7 +106,7 @@ class FrisquetScheduleCard extends HTMLElement {
         const etat = v === 1 ? "Confort" : "Réduit";
         // Bloc (visible pour Confort, zone de survol pour Réduit)
         blocks +=
-          `<div class="blk ${v === 1 ? "confort" : "reduit"}" data-tip="${jours[d]} : ${etat} ${label}"
+          `<div class="blk ${v === 1 ? "confort" : "reduit"}" data-tip="${jourNom} : ${etat} ${label}"
                 style="left:${left}%;width:${width}%;${v === 1 ? `background:${confortColor}` : ""}"></div>`;
         // Marqueur de changement d'état (début de plage, hors 00:00)
         if (i > 0) {
@@ -100,7 +121,7 @@ class FrisquetScheduleCard extends HTMLElement {
       const isToday = d === nowDay;
       rows += `
         <div class="row">
-          <div class="day ${isToday ? "today" : ""}">${jours[d]}</div>
+          <div class="day ${isToday ? "today" : ""}">${jourNom}</div>
           <div class="track">
             <div class="track-bg"></div>
             ${blocks}
@@ -184,10 +205,12 @@ class FrisquetScheduleCard extends HTMLElement {
   }
 }
 
-customElements.define("frisquet-schedule-card", FrisquetScheduleCard);
+if (!customElements.get("frisquet-schedule-card")) {
+  customElements.define("frisquet-schedule-card", FrisquetScheduleCard);
+}
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "frisquet-schedule-card",
   name: "Frisquet Schedule Card",
   description: "Frise hebdomadaire de la programmation Frisquet (Confort / Réduit)",
-});
+});	
