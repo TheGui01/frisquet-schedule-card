@@ -1,24 +1,4 @@
-/**
- * Frisquet Schedule Card — frise hebdomadaire type "Schedule Helper Card".
- *
- * Affiche les 7 jours avec les plages Confort (rouge) / Réduit (bleu)
- * à partir de l'attribut `programmation` de l'entité climate :
- *   [{ "jour": 0..6, "plages": [0/1, ...] }]
- *
- * Installation :
- *   1. Copier ce fichier dans config/www/frisquet-schedule-card.js
- *   2. Paramètres -> Tableaux de bord -> Ressources -> ajouter :
- *      /local/frisquet-schedule-card.js (type JavaScript)
- *   3. Vider le cache du navigateur.
- *
- * Utilisation :
- *   type: custom:frisquet-schedule-card
- *   entity: climate.mazone
- *   title: Programmation de chauffe      # optionnel
- *   confort_color: "#ff5252"             # optionnel
- *   reduit_color: "#42a5f5"              # optionnel
- *   show_now: true                       # optionnel : ligne "maintenant"
- */
+
 
 class FrisquetScheduleCard extends HTMLElement {
   setConfig(config) {
@@ -148,7 +128,7 @@ class FrisquetScheduleCard extends HTMLElement {
                cursor: default; }
         .blk.confort { z-index: 1; }
         .blk.reduit { z-index: 1; }
-        .chg { position: absolute; top: -2px; width: 0; z-index: 2; }
+        .chg { position: absolute; top: -12px; width: 0; z-index: 2; }
         .chg::before { content: ""; position: absolute; left: -1px; top: 2px;
                        width: 2px; height: 20px;
                        background: var(--primary-text-color, #333); opacity: 0.55;
@@ -175,8 +155,10 @@ class FrisquetScheduleCard extends HTMLElement {
       </style>
       <ha-card>
         ${this.config.title ? `<div class="title">${this.config.title}</div>` : ""}
-        <div class="nowwrap">${nowLine}</div>
-        ${rows}
+        <div class="rows">
+          ${rows}
+          ${nowLine}
+        </div>
         <div class="scale">${scale}</div>
         <div class="legend">
           <span><span class="dot" style="background:${confortColor}"></span>Confort</span>
