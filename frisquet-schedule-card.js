@@ -1,4 +1,17 @@
-
+/**
+ * Frisquet Schedule Card — frise hebdomadaire type "Schedule Helper Card".
+ *
+ * Affiche les 7 jours avec les plages Confort (rouge) / Réduit (bleu)
+ * à partir de l'attribut `programmation` de l'entité climate :
+ *   [{ "jour": 0..6, "plages": [0/1, ...] }]
+ *
+ * Utilisation :
+ *   type: custom:frisquet-schedule-card
+ *   entity: climate.mazone
+ *   title: Programmation de chauffe      # optionnel
+ *   confort_color: "#ff5252"             # optionnel
+ *   reduit_color: "#42a5f5"              # optionnel
+ */
 
 class FrisquetScheduleCard extends HTMLElement {
   setConfig(config) {
@@ -39,7 +52,6 @@ class FrisquetScheduleCard extends HTMLElement {
 
     const confortColor = this.config.confort_color || "#ff5252";
     const reduitColor = this.config.reduit_color || "#42a5f5";
-    const showNow = this.config.show_now !== false;
     const jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
     const byDay = {};
@@ -52,12 +64,7 @@ class FrisquetScheduleCard extends HTMLElement {
     if (!total) total = 288;
     const stepMin = total >= 288 ? 5 : 30;
 
-    // Marqueur "maintenant"
-    const now = new Date();
     const nowDay = (now.getDay() + 6) % 7;
-    const nowPct =
-      ((nowDay * 24 * 60 + now.getHours() * 60 + now.getMinutes()) /
-        (7 * 24 * 60)) * 100;
 
     const fmtTime = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
@@ -108,11 +115,6 @@ class FrisquetScheduleCard extends HTMLElement {
       scale += `<div class="tick" style="left:${(h / 24) * 100}%">${String(h).padStart(2, "0")}</div>`;
     }
 
-    const nowLine =
-      showNow
-        ? `<div class="now" style="left:${nowPct}%"></div>`
-        : "";
-
     this.renderRoot.innerHTML = `
       <style>
         ha-card { padding: 16px; }
@@ -149,15 +151,12 @@ class FrisquetScheduleCard extends HTMLElement {
                   font-size: 0.85em; color: var(--primary-text-color); }
         .dot { display: inline-block; width: 10px; height: 10px;
                border-radius: 50%; margin-right: 5px; vertical-align: middle; }
-        .nowwrap { position: relative; height: 0; margin-left: 82px; }
-        .now { position: absolute; top: -${7 * 40 + 22}px; width: 2px; height: ${7 * 40}px;
-               background: var(--accent-color, orange); z-index: 2; }
+        .rows { position: relative; }
       </style>
       <ha-card>
         ${this.config.title ? `<div class="title">${this.config.title}</div>` : ""}
         <div class="rows">
           ${rows}
-          ${nowLine}
         </div>
         <div class="scale">${scale}</div>
         <div class="legend">
